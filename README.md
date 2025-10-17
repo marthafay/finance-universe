@@ -2,7 +2,7 @@
 
 Research prototypes exploring signal geometry, energy logic, and agent behavior in financial time series.
 
-This repository contains three lightweight experimental prototypes for signal-driven agents in finance. All models use deterministic logic and energy-inspired features — without machine learning.
+This repository contains three lightweight experimental prototypes for signal-driven agents in finance. All models use deterministic logic and energy-inspired features without machine learning.
 
 CAUTION
 -------------------

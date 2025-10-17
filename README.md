@@ -71,7 +71,7 @@ I’d be happy if you like my work: https://buymeacoffee.com/marthafay
 6  1.742  0.955  3.648       0.700       hot
 7  1.114  1.180  1.887       0.703       hot
 
-MC Band (deal 0): 0.700 .. 0.767
+    MC Band (deal 0): 0.700 .. 0.767
 
 3. finance_universe_demo.py example plot:
 

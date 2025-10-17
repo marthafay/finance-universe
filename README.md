@@ -50,11 +50,8 @@ I’d be happy if you like my work: https://buymeacoffee.com/marthafay
 
 ## Example Output
 
-1. finance_universe_demo.py example plot:
 
-<img width="1189" height="790" alt="image" src="https://github.com/user-attachments/assets/f0ec81a4-325e-4b78-b042-f1950fbe6342" />
-
-2. python codez/maxwell_agent_flux.py --demo
+1. python codez/maxwell_agent_flux.py --demo
 == Maxwell-Flux Agent ==
    CAGR: -0.1573
  Sharpe: -1.1429
@@ -62,7 +59,7 @@ I’d be happy if you like my work: https://buymeacoffee.com/marthafay
     Hit:  0.1960
  FinalEq: 0.5069  Bars: 1000
 
-3. python codez/gravity_agent.py
+2. python codez/gravity_agent.py
 == Gravity M&A Agent Demo ==
        K      U    eta  multiplier    status
 0  1.268  1.324  1.914       0.702       hot
@@ -75,4 +72,8 @@ I’d be happy if you like my work: https://buymeacoffee.com/marthafay
 7  1.114  1.180  1.887       0.703       hot
 
 MC Band (deal 0): 0.700 .. 0.767
+
+3. finance_universe_demo.py example plot:
+
+<img width="1189" height="790" alt="image" src="https://github.com/user-attachments/assets/f0ec81a4-325e-4b78-b042-f1950fbe6342" />
 

@@ -1,0 +1,114 @@
+# Copyright (c) 2025, Elias, Martha
+# License: Apache 2.0 (see LICENSE)
+# Terms, concepts and note on disclosure in README.md
+# Elias, M. (2025). Applied Mathematics: Signal Geometric Framework for Finance and Agent-Based (Deterministic) Modeling. Zenodo. https://doi.org/10.5281/zenodo.17216401
+# Id be happy if you like my work: https://buymeacoffee.com/marthafay
+# Disclaimer: research only
+
+"""
+gravity_agent.py — M&A Universe + Agent
+
+Features:
+- Gravity Universe (Drive K, Resilience U)
+- G-Index: η = 2K/U
+- Regulator: Gravity Factor (logistic | tanh)
+- Monte Carlo uncertainty bands
+- GravityMnaAgent: evaluates deals & prints status
+"""
+
+
+import numpy as np
+import pandas as pd
+
+# ----------------------------
+# Gravity Universe
+# ----------------------------
+
+def g_index(K, U, eps=1e-9):
+    """Compute G-Index η = 2K/U."""
+    K, U = np.asarray(K, float), np.asarray(U, float)
+    return 2.0 * K / (U + eps)
+
+def regulator(eta, kind="logistic", beta=3.0, floor=0.7, cap=1.3):
+    """Dynamic Gravity Factor."""
+    if kind == "logistic":
+        s = 1.0 / (1.0 + np.exp(-beta * (1.0 - eta)))
+    elif kind == "tanh":
+        s = 0.5 * (1.0 + np.tanh(beta * (1.0 - eta)))
+    else:
+        raise ValueError("regulator must be 'logistic' or 'tanh'")
+    return floor + (cap - floor) * s
+
+def status_labels(eta, lo=0.85, hi=1.15):
+    """Map η to qualitative labels."""
+    out = []
+    for v in eta:
+        if v > hi:
+            out.append("hot")
+        elif v < lo:
+            out.append("sluggish")
+        else:
+            out.append("balanced")
+    return out
+
+def mc_bands(K, U, mc=500, seed=42, kind="logistic"):
+    """Monte Carlo bands for regulator score."""
+    rng = np.random.default_rng(seed)
+    K_s = rng.lognormal(np.log(np.maximum(K, 1e-6)), 0.2, mc)
+    U_s = rng.lognormal(np.log(np.maximum(U, 1e-6)), 0.2, mc)
+    eta_s = g_index(K_s, U_s)
+    S_s   = regulator(eta_s, kind=kind)
+    return np.percentile(S_s, 10), np.percentile(S_s, 90)
+
+# ----------------------------
+# Gravity Agent
+# ----------------------------
+
+class GravityMnaAgent:
+    def __init__(self, K, U, kind="logistic", beta=3.0, floor=0.7, cap=1.3):
+        self.K = np.asarray(K, float)
+        self.U = np.asarray(U, float)
+        self.kind = kind
+        self.beta = beta
+        self.floor = floor
+        self.cap = cap
+
+        self.eta = g_index(self.K, self.U)
+        self.S   = regulator(self.eta, kind=kind, beta=beta, floor=floor, cap=cap)
+        self.status = status_labels(self.eta)
+
+    def summary(self):
+        df = pd.DataFrame({
+            "K": self.K,
+            "U": self.U,
+            "eta": self.eta,
+            "multiplier": self.S,
+            "status": self.status
+        })
+        return df
+
+    def mc_eval(self, i=0, mc=500, seed=42):
+        return mc_bands(self.K[i], self.U[i], mc=mc, seed=seed, kind=self.kind)
+
+# ----------------------------
+# Demo Runner
+# ----------------------------
+
+def demo(n=8, seed=1):
+    rng = np.random.default_rng(seed)
+    K = rng.uniform(0.5, 2.0, n)   # growth/drive
+    U = rng.uniform(0.5, 2.0, n)   # resilience
+    agent = GravityMnaAgent(K, U, kind="tanh")
+
+    df = agent.summary()
+    print("== Gravity M&A Agent Demo ==")
+    print(df.round(3))
+
+    # Monte Carlo for first deal
+    lo, hi = agent.mc_eval(0)
+    print(f"\nMC Band (deal 0): {lo:.3f} .. {hi:.3f}")
+
+    return agent, df
+
+if __name__ == "__main__":
+    demo()

@@ -4,10 +4,10 @@ Research prototypes exploring signal geometry, energy logic, and agent behavior 
 
 This repository contains three lightweight experimental prototypes for signal-driven agents in finance. All models use deterministic logic and energy-inspired features — without machine learning.
 
-CAUTION
+**CAUTION**`
 Deterministic modeling is vulnerable to unnatural market distortions and algorithmically triggered stop-loss orders. Independent risk management and strategies are essential.
 
-DISCLAIMER (Research Only)
+**DISCLAIMER (Research Only)**
 This repository contains a research prototype. It is provided for educational and research purposes only. It does NOT constitute financial, investment, legal, medical, or any other form of professional advice. No warranty is expressed or implied. Use entirely at your own risk. Before applying any outputs to real-world decisions, seek advice from qualified professionals and conduct independent verification.
 
 Note on Terminology

@@ -42,7 +42,7 @@ Each file is standalone. No installation needed beyond numpy, pandas, matplotlib
 
 ## ☕ Support
 
-I’d be happy if you like my work: https://buymeacoffee.com/marthafay: https://buymeacoffee.com/marthafay
+I’d be happy if you like my work: https://buymeacoffee.com/marthafay
 
 ---
 

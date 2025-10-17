@@ -1,0 +1,204 @@
+# Copyright (c) 2025, Elias, Martha
+# License: Apache 2.0 (see LICENSE)
+# Terms, concepts and note on disclosure in README.md
+# Elias, M. (2025). Applied Mathematics: Signal Geometric Framework for Finance and Agent-Based (Deterministic) Modeling. Zenodo. https://doi.org/10.5281/zenodo.17216401
+
+"""
+finance_universe_demo.py — Demo for Finance/Signal Universe 
+
+Features:
+- Virial-Candles (Hazard, Barrier, Impulse → OHLC)
+- OddSpin-Feature (Symmetrie / Oddness)
+- Schrödinger-Zone via rolling Pseudoskalar-Score
+- CAPD-Risk-Dämpfung (mit dynamischer Glättung: ema | median | kalman | exp)
+- Mini-Backtest (mit Fees + Slippage, kein Leakage)
+- Demo mit Plot (Preis, Oddness/Pscore, Equity)
+
+"""
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.ndimage import median_filter
+
+# ----------------------------
+# Utilities
+# ----------------------------
+
+def diff1(x: np.ndarray) -> np.ndarray:
+    y = np.empty_like(x, dtype=float)
+    y[0] = np.nan
+    y[1:] = np.diff(x)
+    return y
+
+# ----------------------------
+# Virial-Candles
+# ----------------------------
+
+def virial_candles(S, B, T, kappa=1.2, vol_win=20):
+    S, B, T = map(np.asarray, (S, B, T))
+    surplus = np.maximum(S - B, 0.0)
+    drive = 0.5 * (B + T) - surplus
+    sigma = pd.Series(drive).rolling(vol_win).std().bfill().to_numpy()
+
+    open_, close, high, low = np.zeros(len(S)), np.zeros(len(S)), np.zeros(len(S)), np.zeros(len(S))
+    open_[0] = 0.0
+    close[0] = drive[0]
+    high[0] = max(open_[0], close[0]) + kappa*sigma[0]
+    low[0]  = min(open_[0], close[0]) - kappa*sigma[0]
+
+    for t in range(1, len(S)):
+        open_[t] = close[t-1]
+        close[t] = open_[t] + drive[t]
+        high[t] = max(open_[t], close[t]) + kappa*sigma[t]
+        low[t]  = min(open_[t], close[t]) - kappa*sigma[t]
+
+    return pd.DataFrame({"open":open_, "high":high, "low":low, "close":close,
+                         "drive":drive, "sigma":sigma})
+
+# ----------------------------
+# OddSpin + Pseudoskalar
+# ----------------------------
+
+def oddspin_score(r, window=40):
+    r = np.asarray(r, float)
+    out = np.full_like(r, np.nan, float)
+    for i in range(window-1, len(r)):
+        seg = r[i-window+1:i+1]
+        rev = seg[::-1]
+        num = np.sum((seg - seg.mean())*(rev - rev.mean()))
+        den = np.sqrt(np.sum((seg - seg.mean())**2) * np.sum((rev - rev.mean())**2))
+        out[i] = num/den if den > 1e-12 else 0.0
+    return out
+
+def rolling_pseudoscalar(S: np.ndarray, window=60) -> np.ndarray:
+    """Rolling pseudoscalar energy ratio (Odd vs. total)."""
+    S = np.asarray(S, float)
+    out = np.full(len(S), np.nan)
+    t = np.arange(window)
+    for i in range(window-1, len(S)):
+        seg = S[i-window+1:i+1]
+        S_even = 0.5*(seg + seg[::-1])
+        S_odd  = 0.5*(seg - seg[::-1])
+        E_tot  = np.trapezoid(seg**2, t) + 1e-12
+        E_odd  = np.trapezoid(S_odd**2, t)
+
+        out[i] = E_odd / E_tot
+    return out
+
+# ----------------------------
+# CAPD Scaling (dynamisch)
+# ----------------------------
+
+def temporal_scale(N, halflife=500, mode="exp"):
+    t = np.arange(N, dtype=float)
+    if mode == "exp":
+        scale = np.power(0.5, t/halflife)   # halbiert sich alle `halflife` Schritte
+    else:
+        scale = 1.0/(1.0 + t/halflife)
+    return np.clip(scale, 1e-12, 1.0)
+
+def capd_scale(sig, vol, mode="ema", alpha=0.2, halflife=500, q=1e-5, r=1e-3, median_win=5):
+    sig = np.asarray(sig, float)
+    vol = np.asarray(vol, float)
+    inv_vol = 1/np.maximum(vol, 1e-6)
+    inv_vol = inv_vol/np.max(inv_vol)
+
+    if mode == "ema":
+        smoothed = pd.Series(inv_vol).ewm(alpha=alpha).mean().to_numpy()
+    elif mode == "median":
+        smoothed = median_filter(inv_vol, size=median_win)
+    elif mode == "kalman":
+        xhat = np.zeros_like(inv_vol)
+        P = 1.0
+        xhat[0] = inv_vol[0]
+        for t in range(1, len(inv_vol)):
+            P = P + q
+            K = P / (P + r)
+            xhat[t] = xhat[t-1] + K*(inv_vol[t] - xhat[t-1])
+            P = (1 - K) * P
+        smoothed = xhat
+    elif mode == "exp":
+        smoothed = temporal_scale(len(sig), halflife=halflife)
+    else:
+        raise ValueError(f"Unbekannter mode={mode}")
+
+    return sig * smoothed
+
+# ----------------------------
+# Decision Logic
+# ----------------------------
+
+def decision_signal(r, odd, ps, theta_odd=0.3):
+    sig = np.zeros(len(r))
+    for i in range(len(r)):
+        if np.isnan(odd[i]) or np.isnan(ps[i]):
+            sig[i] = 0.0
+            continue
+        if ps[i] > theta_odd:     # Schrödinger-Zone
+            sig[i] = 0.5
+        elif odd[i] < 0.2:        # Long
+            sig[i] = 1.0
+        elif odd[i] > 0.8:        # Short
+            sig[i] = -1.0
+        else:
+            sig[i] = 0.0          # Flat
+    return sig
+
+# ----------------------------
+# Backtest
+# ----------------------------
+
+def backtest(price, sig, fee_bps=1.0, slip_bps=2.0):
+    r = diff1(np.log(price))
+    w = pd.Series(sig).shift(1).fillna(0).to_numpy()
+    gross = w * r
+    turnover = np.abs(np.diff(np.r_[0,w]))
+    cost = turnover * (fee_bps + slip_bps)/1e4
+    pnl = gross - cost
+    eq = np.cumprod(1+np.nan_to_num(pnl))
+    return {"equity":eq, "pnl":pnl}
+
+# ----------------------------
+# Demo Runner
+# ----------------------------
+
+def demo(n=1000, seed=42, plot=True, mode="ema"):
+    np.random.seed(seed)
+    price = 100*np.exp(np.cumsum(0.0002 + 0.01*np.random.randn(n)))
+    returns = diff1(np.log(price))
+
+    # Treiber
+    S = pd.Series(np.abs(returns)).rolling(10).mean().bfill().to_numpy()
+    B = pd.Series(np.abs(returns)).rolling(30).mean().bfill().to_numpy()
+    T = pd.Series(np.gradient(returns)).bfill().to_numpy()
+
+    candles = virial_candles(S, B, T)
+    odd = oddspin_score(returns)
+    ps = rolling_pseudoscalar(S)
+    sig_raw = decision_signal(returns, odd, ps)
+
+    # CAPD-Scaling inkl. dynamischer Wahl
+    vol = pd.Series(returns).rolling(20).std().bfill().to_numpy()
+    sig_scaled = capd_scale(sig_raw, vol, mode=mode, alpha=0.2, halflife=400)
+
+    bt = backtest(price, sig_scaled)
+
+    print("== Universe Demo ==")
+    print(f"Mode: {mode}")
+    print(f"Final Equity: {bt['equity'][-1]:.3f}")
+    print(f"Mean PnL: {np.nanmean(bt['pnl']):.6f}")
+
+    if plot:
+        fig, ax = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
+        ax[0].plot(price, label="Price"); ax[0].legend()
+        ax[1].plot(odd, label="OddSpin")
+        ax[1].plot(ps, label="Pseudoscalar (rolling)", alpha=0.7); ax[1].legend()
+        ax[2].plot(bt["equity"], label="Equity Curve (net)")
+        ax[2].axhline(1.0, color="k", lw=0.7); ax[2].legend()
+        plt.tight_layout(); plt.show()
+
+    return price, candles, odd, ps, sig_scaled, bt
+
+if __name__ == "__main__":
+    demo(mode="kalman")

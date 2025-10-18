@@ -17,7 +17,8 @@ Note on Terminology
 The terms, metaphors, and models used in this repository (e.g., "Pseudoscalar Score", "Schrödinger Zone", "Virial Candle") are conceptual research constructs intended for educational and experimental purposes. They are not commercial brand claims or endorsements. Any commercial use must include clear attribution to the original source and must not imply sponsorship, endorsement, or warranty by the author.
 
 Licensing Notice
-----------------Licensed under the Apache License, Version 2.0 (the "License"); 
+----------------
+Licensed under the Apache License, Version 2.0 (the "License"); 
 you may not use this file except in compliance with the License. 
 You may obtain a copy of the License at:
     https://www.apache.org/licenses/LICENSE-2.0

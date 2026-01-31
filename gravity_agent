@@ -1,7 +1,7 @@
 # Copyright (c) 2025, Elias, Martha
 # License: Apache 2.0 (see LICENSE)
 # Terms, concepts and note on disclosure in README.md
-# Elias, M. (2025). Applied Mathematics: Signal Geometric Framework for Finance and Agent-Based (Deterministic) Modeling. Zenodo. https://doi.org/10.5281/zenodo.17216401
+# Elias, M. (2025). Applied Mathematics: Signal Geometric Framework for Finance and Agent-Based (Deterministic) Modeling. 
 # Id be happy if you like my work: https://buymeacoffee.com/marthafay
 # Disclaimer: research only
 

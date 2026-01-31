@@ -4,6 +4,7 @@
 # Elias, M. (2025). Applied Mathematics: Signal Geometric Framework for Finance and Agent-Based (Deterministic) Modeling. 
 # Id be happy if you like my work: https://buymeacoffee.com/marthafay
 # Disclaimer: research only
+# I want to get hired! Contact marthaelias[at]protonmail.com
 
 """
 maxwell_agent_flux.py — Maxwell-Inspired Features + Simple Agent
